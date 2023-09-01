@@ -88,14 +88,11 @@ void Server::logDisconnect()
     QTcpSocket* sock = (QTcpSocket*) sender();
     int sockDesc = sock->socketDescriptor();
 
-    log("Disconnected. <" + sock->peerAddress().toString() + ">");
+    log("Disconnected. <" + sock->peerAddress().toString() + ":" + QString::number(sock->peerPort()) + ">");
 
     // close & remove socket from the map (if it exists)
-    try
-    {
-        m_sockets[sockDesc]->close();
-        m_sockets.remove(sockDesc);
-    }
+    //    m_sockets[sockDesc]->close();
+    //    m_sockets.remove(sockDesc);
 }
 
 void Server::handle()
