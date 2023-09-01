@@ -19,6 +19,7 @@ public:
     QHostAddress m_address;
     QMap<int, QTcpSocket*> m_sockets;
 
+    QFile *m_logfile;
     Database *m_database;
 
     bool isSqlEnabled = true;

@@ -5,6 +5,14 @@ Server::Server(std::string addr, uint16_t port, QObject *parent = Q_NULLPTR) : Q
     m_address = QHostAddress(QString::fromStdString(addr));
     m_port = port;
 
+
+    m_logfile = new QFile("log.txt");
+
+    if(!m_logfile->open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Append))
+    {
+        // IO
+    }
+
     // SQL init
     if(isSqlEnabled)
     {
@@ -31,16 +39,25 @@ Server::~Server()
 
     log("Server was shutdown.");
 
-    delete m_database;
+    m_database->close();
+    m_logfile->close();
 }
 
 void Server::log(const QString& msg)
 {
+    QDateTime date(QDateTime::currentDateTime());
+
+    QString log_msg = date.toString() + " [Server]: " + msg + "\n";
+
+    QTextStream lout(m_logfile);
+
+    lout << log_msg;
+
     std::cout << "[Server]: " << msg.toStdString() << std::endl;
 }
 
 void Server::run()
-{
+{   
     log("Running at " + m_address.toString() + ":" + QString::number(m_port));
     m_tcp.listen(m_address, m_port);
 
@@ -76,7 +93,7 @@ void Server::handleConnection()
     QTcpSocket* sock = m_tcp.nextPendingConnection();
     int sockDesc = sock->socketDescriptor();
 
-    log("New connection. <" + sock->peerAddress().toString() + ">");
+    log("New connection. <" + sock->peerAddress().toString() + ":" + QString::number(sock->peerPort()) + ">");
 
     m_sockets[sockDesc] = sock;
     connect(m_sockets[sockDesc], &QTcpSocket::readyRead, this, &Server::handle);
