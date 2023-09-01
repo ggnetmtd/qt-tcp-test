@@ -1,3 +1,3 @@
-## C++, TCP, SQLite, Qt__
+## C++, TCP, SQLite, Qt
 
-*** MathExpression не поддерживает bracket'ы (скобки) ***__
+*** MathExpression не поддерживает bracket'ы (скобки) ***
