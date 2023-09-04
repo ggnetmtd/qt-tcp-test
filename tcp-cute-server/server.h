@@ -40,6 +40,7 @@ public slots:
     void handle();
 private:
     void log(const QString& msg);
+    void sendData(const QString& msg, QTcpSocket* socket);
 };
 
 #endif // SERVER_H

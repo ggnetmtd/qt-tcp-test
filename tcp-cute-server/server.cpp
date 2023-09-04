@@ -110,8 +110,6 @@ void Server::handle()
 
     QByteArray data = sock->readAll();
 
-    QByteArray toSend;
-
     // ...
     char header = data[0];
 
@@ -136,12 +134,10 @@ void Server::handle()
 
             log(MSG_IS_TOO_SHORT);
 
-            toSend.append(MATH_HEADER_BYTE); // header
-            toSend.push_back(MSG_IS_TOO_SHORT.toUtf8()); // msg
+            sendData(MSG_IS_TOO_SHORT, sock);
 
             m_database.saveData(data, MSG_IS_TOO_SHORT);
 
-            sock->write(toSend);
 
             return;
         }
@@ -164,22 +160,28 @@ void Server::handle()
             resultStr = QString(err.what());
         }
 
-        toSend.append(MATH_HEADER_BYTE); // header
-        toSend.push_back(resultStr.toUtf8()); // msg
+        sendData(resultStr, sock);
 
         log("Result:" + resultStr);
 
         if(isSqlEnabled)
             m_database.saveData(data, resultStr);
-
-        sock->write(toSend);
     }
     else
     {
         const QString MSG_INVALID_HEADER = "Request header is invalid.";
-        toSend.append(MATH_HEADER_BYTE);
-        toSend.push_back(MSG_INVALID_HEADER.toUtf8());
-
-        sock->write(toSend);
+        sendData(MSG_INVALID_HEADER, sock);
     }
+}
+
+
+void Server::sendData(const QString& msg, QTcpSocket* socket)
+{
+    QByteArray data;
+
+    data.append(MATH_HEADER_BYTE); // header
+
+    data.push_back(msg.toUtf8()); // msg
+
+    socket->write(data);
 }

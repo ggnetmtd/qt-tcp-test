@@ -13,13 +13,6 @@ public:
 
     Database(const QString& driver, QObject *parent);
 
-    void init(const QString& host, const QString& user, const QString& password)
-    {
-        // Not for SQLite
-        //m_db.setHostName(host);
-        //m_db.setUserName(user);
-        //m_db.setPassword(password);
-    }
 
     void init(const QString& dbname)
     {
