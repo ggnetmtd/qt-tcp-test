@@ -12,7 +12,7 @@ class MathExpression
 public:
     std::vector<MathExpressionToken> m_tokens;
 
-    MathExpression(std::string& expr);
+    MathExpression(const std::string& expr);
     ~MathExpression();
     double calculate();
 

@@ -21,9 +21,9 @@ public:
         //m_db.setPassword(password);
     }
 
-    void init()
+    void init(const QString& dbname)
     {
-
+        setdb(dbname);
     }
 
     void setdb(const QString& db)

@@ -22,9 +22,7 @@ void Database::saveData(const QByteArray &data, const QString &result)
     try
     {
         bool result = query.exec();
-    #ifdef DEBUG
-        qDebug() << "Saved: " << result << " | err: " << query.lastError();
-    #endif
+
         if(!result)
             emit gotSqlError(query.lastError().text());
     }
@@ -50,9 +48,7 @@ void Database::createMessagesTable()
     try
     {
         bool result = query.exec();
-#ifdef DEBUG
-        qDebug() << "Created: " << result << " | err: " << query.lastError();
-#endif
+
         if(!result)
             emit gotSqlError(query.lastError().text());
     }

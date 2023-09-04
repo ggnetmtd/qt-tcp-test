@@ -1,6 +1,6 @@
 #include "mathexpression.h"
 
-MathExpression::MathExpression(std::string& expr)
+MathExpression::MathExpression(const std::string& expr)
 {
     if(!getTokens(expr, m_tokens))
         throw std::invalid_argument("Wrong input. Can't create tokens.");
@@ -14,15 +14,15 @@ MathExpression::~MathExpression()
 
 double MathExpression::calculate()
 {
-    const int MAX_OPERATIONS = 16;  // we'll lose string_view pointers on vector realloc.
+    const int MAX_OPERATIONS = 16;  // we'll lose string_view correct pointers on vector realloc.
 
     std::vector<MathExpressionToken> tokens = m_tokens;
+    double result;
 
     if(tokens.size() == 1)
     {
-        double ret;
-        tokens[0].getValue(ret);
-        return ret;
+        tokens[0].getValue(result);
+        return result;
     }
 
     std::vector<std::string> results;
@@ -63,7 +63,6 @@ double MathExpression::calculate()
     }
 
     // our last token is the result
-    double result;
     tokens[0].getValue(result);
 
     return result;
@@ -97,8 +96,7 @@ bool MathExpression::getTokens(const std::string& str, std::vector<MathExpressio
             tokens.push_back(MathExpressionToken(ArgumentToken, strv.substr(token_pos, index - token_pos)));
 
             // push operator
-            if(index != length)
-              tokens.push_back(MathExpressionToken(OperatorToken, strv.substr(index, 1)));
+            tokens.push_back(MathExpressionToken(OperatorToken, strv.substr(index, 1)));
 
             // change token position
             token_pos = index + 1;
@@ -111,7 +109,7 @@ bool MathExpression::getTokens(const std::string& str, std::vector<MathExpressio
         return false;
     }
 
-    // push last argument
+    // push last argument/value
     tokens.push_back(MathExpressionToken(ArgumentToken, strv.substr(token_pos, index)));
 
     return true;

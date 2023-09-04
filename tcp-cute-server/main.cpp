@@ -1,7 +1,4 @@
 #include <QCoreApplication>
-#include <QTcpServer>
-
-#include <iostream>
 
 #include "server.h"
 

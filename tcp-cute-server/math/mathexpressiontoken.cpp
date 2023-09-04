@@ -6,6 +6,8 @@ int MathExpressionToken::getPrecedence()
 
     if(Value.size() == 1 && Type == OperatorToken)
         op = Value[0];
+    else
+        return 0;
 
     if(op == '+' || op == '-')
         return 1;

@@ -1,29 +1,22 @@
 #include "server.h"
 
-Server::Server(std::string addr, uint16_t port, QObject *parent = Q_NULLPTR) : QObject(parent)
+Server::Server(std::string addr, uint16_t port, QObject *parent = Q_NULLPTR) : QObject(parent),
+    m_logfile(this->log_file), m_database("QSQLITE", this)
 {
     m_address = QHostAddress(QString::fromStdString(addr));
     m_port = port;
 
-
-    m_logfile = new QFile("log.txt");
-
-    if(!m_logfile->open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Append))
+    if(!m_logfile.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Append))
     {
-        // IO
+        this->log("Can't open logfile.");
     }
 
     // SQL init
     if(isSqlEnabled)
     {
-        m_database = new Database("QSQLITE", this); // delete in the destructor
+        m_database.init(database_file);
 
-        m_database->setdb("test.sqlite");
-
-        // m_database->init("127.0.0.1", "admin", "admin");
-        // m_database->init();
-
-        connect(m_database, &Database::gotSqlError, this, &logSqlError);
+        connect(&m_database, &Database::gotSqlError, this, &logSqlError);
     }
 }
 
@@ -39,8 +32,8 @@ Server::~Server()
 
     log("Server was shutdown.");
 
-    m_database->close();
-    m_logfile->close();
+    m_database.close();
+    m_logfile.close();
 }
 
 void Server::log(const QString& msg)
@@ -49,7 +42,7 @@ void Server::log(const QString& msg)
 
     QString log_msg = date.toString() + " [Server]: " + msg + "\n";
 
-    QTextStream lout(m_logfile);
+    QTextStream lout(&m_logfile);
 
     lout << log_msg;
 
@@ -63,7 +56,7 @@ void Server::run()
 
     if(isSqlEnabled)
     {
-        if(!m_database->open())
+        if(!m_database.open())
         {
             // m_database->m_db.lastError().text();
             log("Can't connect to SQLite database.");
@@ -71,7 +64,7 @@ void Server::run()
         else
         {
             // открыли базу, если нет таблицы, создаем
-            m_database->createMessagesTable();
+            m_database.createMessagesTable();
         }
     }
 }
@@ -103,7 +96,6 @@ void Server::handleConnection()
 void Server::logDisconnect()
 {
     QTcpSocket* sock = (QTcpSocket*) sender();
-    int sockDesc = sock->socketDescriptor();
 
     log("Disconnected. <" + sock->peerAddress().toString() + ":" + QString::number(sock->peerPort()) + ">");
 
@@ -115,9 +107,10 @@ void Server::logDisconnect()
 void Server::handle()
 {
     QTcpSocket* sock = (QTcpSocket*) sender();
-    int sockDesc = sock->socketDescriptor();
 
     QByteArray data = sock->readAll();
+
+    QByteArray toSend;
 
     // ...
     char header = data[0];
@@ -126,10 +119,9 @@ void Server::handle()
     log("Message: " + message);
 
     // Todo: refactor to another method
-    if(header == 1)
+    if(header == MATH_HEADER_BYTE)
     {
         log("Header is alright.");
-        QByteArray toSend;
 
         // Removed header and whitespaces.
         data.removeFirst();
@@ -144,10 +136,10 @@ void Server::handle()
 
             log(MSG_IS_TOO_SHORT);
 
-            toSend.append(1); // header
+            toSend.append(MATH_HEADER_BYTE); // header
             toSend.push_back(MSG_IS_TOO_SHORT.toUtf8()); // msg
 
-            m_database->saveData(data, MSG_IS_TOO_SHORT);
+            m_database.saveData(data, MSG_IS_TOO_SHORT);
 
             sock->write(toSend);
 
@@ -156,32 +148,38 @@ void Server::handle()
 
         std::string dataString = QString(data).toStdString();
 
-        MathExpression expr(dataString);
-
+        std::unique_ptr<MathExpression> expr;
         double result;
         QString resultStr;
 
-        try {
-            result = expr.calculate();
+        try
+        {
+            expr = std::make_unique<MathExpression>(dataString);
+            result = expr->calculate();
             resultStr = QString::number(result);
         }
-        catch(std::invalid_argument &err)
+        catch (std::invalid_argument& err)
         {
+            log(err.what());
             resultStr = QString(err.what());
         }
 
-        toSend.append(1); // header
+        toSend.append(MATH_HEADER_BYTE); // header
         toSend.push_back(resultStr.toUtf8()); // msg
 
         log("Result:" + resultStr);
 
         if(isSqlEnabled)
-            m_database->saveData(data, resultStr);
+            m_database.saveData(data, resultStr);
 
         sock->write(toSend);
     }
     else
     {
+        const QString MSG_INVALID_HEADER = "Request header is invalid.";
+        toSend.append(MATH_HEADER_BYTE);
+        toSend.push_back(MSG_INVALID_HEADER.toUtf8());
 
+        sock->write(toSend);
     }
 }
